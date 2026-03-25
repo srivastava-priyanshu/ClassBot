@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoClassBot – Gemini Powered</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap');
+
+:root {
+  --bg: #07090f;
+  --surface: #0e1117;
+  --card: #131820;
+  --border: #1e2535;
+  --accent: #00e5ff;
+  --green: #00ff88;
+  --red: #ff4757;
+  --yellow: #ffd32a;
+  --text: #e8eaf0;
+  --muted: #5a6478;
+  --dim: #2a3347;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,229,255,.01) 2px, rgba(0,229,255,.01) 4px);
+  pointer-events:none;
+  z-index:999;
+}
+
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  letter-spacing: .1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.2;} }
+
+.powered {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--dim);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+#clockEl {
+  margin-left: auto;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* LEFT PANEL */
+.panel-left {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 16px;
+  gap: 12px;
+}
+
+.panel-left::-webkit-scrollbar { width: 3px; }
+.panel-left::-webkit-scrollbar-thumb { background: var(--dim); }
+
+.section-head {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: .15em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-head::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background: var(--border);
+}
+
+.start-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: all .25s;
+}
+.start-btn:hover { box-shadow: 0 0 18px rgba(0,229,255,.2); background: rgba(0,229,255,.04); }
+.start-btn.active { border-color: var(--red); color: var(--red); }
+.start-btn.active:hover { box-shadow: 0 0 18px rgba(255,71,87,.2); }
+
+.opt-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.opt-card.on { border-color: rgba(0,229,255,.4); background: rgba(0,229,255,.03); }
+.opt-icon { font-size: 16px; flex-shrink:0; }
+.opt-text .title { font-size: 13px; font-weight: 500; }
+.opt-text .sub   { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.opt-toggle {
+  width: 32px; height: 17px;
+  background: var(--dim);
+  border-radius: 17px;
+  position: relative;
+  margin-left: auto;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+.opt-toggle::after {
+  content:'';
+  position:absolute;
+  width:11px; height:11px;
+  background: var(--muted);
+  border-radius:50%;
+  top:3px; left:3px;
+  transition: all .2s;
+}
+.opt-card.on .opt-toggle { background: var(--accent); }
+.opt-card.on .opt-toggle::after { left:18px; background:#000; }
+
+.int-row { display: flex; gap: 6px; }
+.int-btn {
+  flex:1;
+  padding: 7px 2px;
+  text-align: center;
+  font-size: 11px;
+  font-family: 'Space Mono', monospace;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .2s;
+}
+.int-btn.sel { border-color: var(--accent); color: var(--accent); background: rgba(0,229,255,.05); }
+
+/* PREVIEW */
+.preview-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+#screenVid {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+}
+.prev-empty { font-size: 11px; color: var(--muted); text-align: center; font-family: 'Space Mono', monospace; }
+.rec-badge {
+  position: absolute;
+  top: 5px; right: 5px;
+  background: rgba(255,71,87,.85);
+  color: #fff;
+  font-size: 9px;
+  font-family: 'Space Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: none;
+}
+
+.transcript-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px;
+  min-height: 60px;
+  max-height: 60px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: var(--yellow);
+  font-family: 'Space Mono', monospace;
+  line-height: 1.5;
+}
+.transcript-box::-webkit-scrollbar { width: 2px; }
+.transcript-box::-webkit-scrollbar-thumb { background: var(--dim); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px;
+  text-align: center;
+}
+.stat-val { font-family: 'Space Mono', monospace; font-size: 22px; color: var(--accent); }
+.stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* RIGHT CHAT */
+.panel-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.chat-header strong { font-size: 14px; font-weight: 500; }
+#topicDisplay {
+  font-size: 11px;
+  color: var(--accent);
+  font-family: 'Space Mono', monospace;
+  margin-left: auto;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+  transition: background .3s;
+}
+.status-dot.live    { background: var(--green); animation: pulse 1.5s infinite; }
+.status-dot.thinking{ background: var(--yellow); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.2;} }
+
+.prog-bar { height: 2px; background: var(--border); flex-shrink: 0; }
+.prog-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), #7c3aed);
+  transition: width .5s linear;
+}
+
+#chatbox {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  scroll-behavior: smooth;
+}
+#chatbox::-webkit-scrollbar { width: 3px; }
+#chatbox::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 3px; }
+
+.msg {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  animation: fadeUp .3s ease;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.av {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: #1a2a3a;
+  color: #aaa;
+}
+
+.msg-col { display: flex; flex-direction: column; gap: 2px; }
+
+.bubble {
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 700px;
+  word-break: break-word;
+}
+.bubble.student {
+  background: #131820;
+  border: 1px solid #1e2535;
+  color: var(--text);
+}
+.bubble.sys {
+  background: transparent;
+  border: 1px dashed var(--dim);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.meta { font-size: 10px; color: var(--muted); font-family: 'Space Mono', monospace; }
+
+.typing-dots {
+  display: flex; gap: 4px;
+  padding: 8px 12px;
+  background: #131820;
+  border: 1px solid #1e2535;
+  border-radius: 10px;
+  width: fit-content;
+}
+.typing-dots span {
+  width: 5px; height: 5px;
+  background: var(--muted);
+  border-radius: 50%;
+  animation: tdot 1.2s infinite;
+}
+.typing-dots span:nth-child(2){animation-delay:.2s;}
+.typing-dots span:nth-child(3){animation-delay:.4s;}
+@keyframes tdot {
+  0%,80%,100%{transform:scale(1);background:var(--muted);}
+  40%{transform:scale(1.5);background:var(--accent);}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-dot"></div>
+    AUTO CLASS BOT
+  </div>
+  <span class="powered">Powered by Gemini 2.0 Flash</span>
+  <span id="clockEl">--:--:--</span>
+</div>
+
+<div class="layout">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+
+    <button class="start-btn" id="mainBtn" onclick="toggleBot()">▶ START MONITORING</button>
+
+    <div>
+      <div class="section-head">Input Sources</div>
+      <div class="opt-card on" id="cardScreen" onclick="toggleOpt('screen')">
+        <div class="opt-icon">🖥️</div>
+        <div class="opt-text">
+          <div class="title">Screen Capture</div>
+          <div class="sub">Gemini reads whiteboard</div>
+        </div>
+        <div class="opt-toggle"></div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="opt-card on" id="cardAudio" onclick="toggleOpt('audio')">
+        <div class="opt-icon">🎤</div>
+        <div class="opt-text">
+          <div class="title">Microphone</div>
+          <div class="sub">Transcribes sir's speech</div>
+        </div>
+        <div class="opt-toggle"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-head">Reply Interval</div>
+      <div class="int-row">
+        <div class="int-btn" onclick="setInterval_(15,this)">15s</div>
+        <div class="int-btn sel" onclick="setInterval_(30,this)">30s</div>
+        <div class="int-btn" onclick="setInterval_(60,this)">60s</div>
+        <div class="int-btn" onclick="setInterval_(120,this)">2m</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-head">Screen Preview</div>
+      <div class="preview-wrap">
+        <video id="screenVid" autoplay muted></video>
+        <div class="prev-empty" id="prevEmpty">📺<br>Share screen<br>to preview</div>
+        <div class="rec-badge" id="recBadge">● REC</div>
+      </div>
+    </div>
+
+    <canvas id="captureCanvas" style="display:none;"></canvas>
+
+    <div>
+      <div class="section-head">Live Transcript</div>
+      <div class="transcript-box" id="transcriptBox">Waiting for audio...</div>
+    </div>
+
+    <div>
+      <div class="section-head">Session Stats</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="statMsgs">0</div>
+          <div class="stat-lbl">Messages</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statCycles">0</div>
+          <div class="stat-lbl">Cycles</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT CHAT PANEL -->
+  <div class="panel-right">
+    <div class="chat-header">
+      <div class="status-dot" id="statusDot"></div>
+      <strong>🏫 Public Chat</strong>
+      <div id="topicDisplay">No topic detected yet</div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <div id="chatbox"></div>
+  </div>
+
+</div>
+
+<script>
+// ── GEMINI CONFIG ──────────────────────────────────────────────────────────────
+const GEMINI_KEY = 'AIzaSyDPZnsfhvSkgQoYiQhbuVapJoF0FrLbJAQ';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let running = false, replyInterval = 30, cycles = 0, totalMsgs = 0;
+let screenStream = null, audioStream = null, recognition = null;
+let progTimer = null, transcriptBuffer = '', lastFrame = null, currentTopic = '';
+let opts = { screen: true, audio: true };
+
+// ── CLOCK ──────────────────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('clockEl').textContent =
+    new Date().toLocaleTimeString('en-IN');
+}, 1000);
+
+// ── HELPERS ────────────────────────────────────────────────────────────────────
+const getNow = () => new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const delay = ms => new Promise(r => setTimeout(r, ms));
+
+// ── OPTION TOGGLES ─────────────────────────────────────────────────────────────
+function toggleOpt(key) {
+  if (running) return;
+  opts[key] = !opts[key];
+  document.getElementById(key === 'screen' ? 'cardScreen' : 'cardAudio')
+    .classList.toggle('on', opts[key]);
+}
+
+// ── INTERVAL ───────────────────────────────────────────────────────────────────
+function setInterval_(v, el) {
+  replyInterval = v;
+  document.querySelectorAll('.int-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// ── STATUS DOT ─────────────────────────────────────────────────────────────────
+function setDot(state) {
+  const d = document.getElementById('statusDot');
+  d.className = 'status-dot';
+  if (state === 'live') d.classList.add('live');
+  if (state === 'think') d.classList.add('thinking');
+}
+
+// ── MAIN TOGGLE ────────────────────────────────────────────────────────────────
+async function toggleBot() {
+  if (!running) await startBot(); else stopBot();
+}
+
+async function startBot() {
+  if (opts.screen) {
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: 1 }, audio: false });
+      const vid = document.getElementById('screenVid');
+      vid.srcObject = screenStream;
+      vid.style.display = 'block';
+      document.getElementById('prevEmpty').style.display = 'none';
+      document.getElementById('recBadge').style.display = 'block';
+      screenStream.getVideoTracks()[0].addEventListener('ended', () => stopBot());
+    } catch(e) {
+      addSys('Screen share cancelled — running audio-only.');
+      opts.screen = false;
+    }
+  }
+
+  if (opts.audio) {
+    try {
+      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      startSpeechRecognition();
+    } catch(e) {
+      addSys('Mic denied — running screen-only.');
+      opts.audio = false;
+    }
+  }
+
+  running = true;
+  document.getElementById('mainBtn').textContent = '⏹ STOP MONITORING';
+  document.getElementById('mainBtn').classList.add('active');
+  setDot('live');
+  addSys('🤖 Gemini bot started! First replies in ' + replyInterval + 's...');
+  startCountdown();
+}
+
+function stopBot() {
+  running = false;
+  clearInterval(progTimer);
+  if (screenStream) { screenStream.getTracks().forEach(t => t.stop()); screenStream = null; }
+  if (audioStream)  { audioStream.getTracks().forEach(t => t.stop()); audioStream = null; }
+  if (recognition)  { try { recognition.stop(); } catch(e){} recognition = null; }
+
+  const vid = document.getElementById('screenVid');
+  vid.srcObject = null; vid.style.display = 'none';
+  document.getElementById('prevEmpty').style.display = 'block';
+  document.getElementById('recBadge').style.display = 'none';
+  document.getElementById('mainBtn').textContent = '▶ START MONITORING';
+  document.getElementById('mainBtn').classList.remove('active');
+  document.getElementById('progFill').style.width = '0%';
+  setDot('');
+  addSys('⏹ Bot stopped.');
+}
+
+// ── COUNTDOWN ──────────────────────────────────────────────────────────────────
+function startCountdown() {
+  let elapsed = 0;
+  document.getElementById('progFill').style.width = '0%';
+  clearInterval(progTimer);
+  progTimer = setInterval(() => {
+    elapsed++;
+    document.getElementById('progFill').style.width = Math.min(100, Math.round((elapsed / replyInterval) * 100)) + '%';
+    if (elapsed >= replyInterval) { clearInterval(progTimer); runCycle(); }
+  }, 1000);
+}
+
+// ── CAPTURE FRAME ──────────────────────────────────────────────────────────────
+function captureFrame() {
+  try {
+    const vid = document.getElementById('screenVid');
+    if (!vid.srcObject || vid.videoWidth === 0) return null;
+    const c = document.getElementById('captureCanvas');
+    c.width = 640; c.height = 360;
+    c.getContext('2d').drawImage(vid, 0, 0, 640, 360);
+    return c.toDataURL('image/jpeg', 0.65).split(',')[1];
+  } catch(e) { return null; }
+}
+
+// ── MAIN CYCLE ─────────────────────────────────────────────────────────────────
+async function runCycle() {
+  if (!running) return;
+  setDot('think');
+  if (opts.screen && screenStream) lastFrame = captureFrame();
+  const snap = transcriptBuffer.trim(); transcriptBuffer = '';
+  await generateReplies(lastFrame, snap);
+  cycles++; document.getElementById('statCycles').textContent = cycles;
+  setDot('live');
+  if (running) startCountdown();
+}
+
+// ── SPEECH RECOGNITION ─────────────────────────────────────────────────────────
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    document.getElementById('transcriptBox').textContent = 'Speech API not supported — use Chrome!';
+    return;
+  }
+  recognition = new SR();
+  recognition.continuous = true; recognition.interimResults = true; recognition.lang = 'en-IN';
+
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) { transcriptBuffer += t + ' '; }
+      else interim += t;
+    }
+    document.getElementById('transcriptBox').textContent =
+      (transcriptBuffer.slice(-120) + interim).trim() || 'Listening...';
+  };
+  recognition.onerror = (e) => { if (e.error !== 'no-speech') console.warn('Speech:', e.error); };
+  recognition.onend = () => { if (running) try { recognition.start(); } catch(e){} };
+  recognition.start();
+}
+
+// ── GEMINI API CALL ────────────────────────────────────────────────────────────
+async function generateReplies(img, speech) {
+  const typingEl = addTyping();
+  const parts = [];
+
+  if (img) {
+    parts.push({ inlineData: { mimeType: 'image/jpeg', data: img } });
+  }
+
+  const prompt = `You are simulating a live Indian online classroom student chat (CodeTantra platform).
+${img ? 'A screenshot of the current lecture screen is attached — read the whiteboard, code, or slides visible.' : ''}
+${speech ? 'Recent speech from the lecture: "' + speech + '"' : ''}
+${currentTopic ? 'Previously detected topic: ' + currentTopic : ''}
+
+Your job:
+1. Detect what topic is currently being taught (1 short phrase).
+2. Generate 3-5 realistic short student chat messages relevant to that topic.
+
+Respond ONLY in this exact JSON format, no markdown, no extra text:
+{"topic":"topic here","replies":[{"name":"Akash","id":"12323501","msg":"message here"}]}
+
+Rules:
+- 1-2 sentences max per reply
+- Mix of: "yes sir", "understood sir", topic-related questions, confusion about concepts
+- Use Indian student names
+- Messages must directly relate to what is being taught`;
+
+  parts.push({ text: prompt });
+
+  try {
+    const res = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts }],
+        generationConfig: { temperature: 0.8, maxOutputTokens: 600 }
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      typingEl.remove();
+      addSys('Gemini error: ' + data.error.message);
+      return;
+    }
+
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+    typingEl.remove();
+
+    if (parsed.topic) {
+      currentTopic = parsed.topic;
+      document.getElementById('topicDisplay').textContent = parsed.topic;
+    }
+
+    for (let i = 0; i < parsed.replies.length; i++) {
+      await delay(300 + Math.random() * 650);
+      const r = parsed.replies[i];
+      addMsg(r.name, r.id, r.msg);
+    }
+
+  } catch(e) {
+    typingEl.remove();
+    addSys('Error: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ── CHAT HELPERS ───────────────────────────────────────────────────────────────
+const AV_COLORS = ['#1a2a3a','#2a1a3a','#1a3a2a','#3a2a1a','#3a1a1a','#1a1a3a'];
+
+function addMsg(name, id, text) {
+  const box = document.getElementById('chatbox');
+  const init = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  const color = AV_COLORS[parseInt(id || '0') % AV_COLORS.length];
+  const el = document.createElement('div'); el.className = 'msg';
+  el.innerHTML = `
+    <div class="av" style="background:${color}">${init}</div>
+    <div class="msg-col">
+      <div class="bubble student">${esc(text)}</div>
+      <div class="meta">${id} · ${name} · ${getNow()}</div>
+    </div>`;
+  box.appendChild(el); box.scrollTop = box.scrollHeight;
+  totalMsgs++; document.getElementById('statMsgs').textContent = totalMsgs;
+}
+
+function addSys(text) {
+  const box = document.getElementById('chatbox');
+  const el = document.createElement('div'); el.className = 'msg';
+  el.innerHTML = `
+    <div class="av" style="font-size:9px;background:#1a1a1a;color:#555">SYS</div>
+    <div class="msg-col">
+      <div class="bubble sys">${esc(text)}</div>
+    </div>`;
+  box.appendChild(el); box.scrollTop = box.scrollHeight;
+}
+
+function addTyping() {
+  const box = document.getElementById('chatbox');
+  const el = document.createElement('div'); el.className = 'msg';
+  el.innerHTML = `
+    <div class="av" style="font-size:9px;background:#1a1a2a;color:#555">AI</div>
+    <div class="typing-dots"><span></span><span></span><span></span></div>`;
+  box.appendChild(el); box.scrollTop = box.scrollHeight;
+  return el;
+}
+</script>
+</body>
+</html>
