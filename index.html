@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AutoClassBot – Gemini Powered</title>
+<title>AutoClassBot – OpenRouter Powered</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;700&display=swap');
 
@@ -394,7 +394,7 @@ body::before {
     <div class="logo-dot"></div>
     AUTO CLASS BOT
   </div>
-  <span class="powered">Powered by Gemini 2.0 Flash</span>
+  <span class="powered">Powered by Llama 4 Scout (Free)</span>
   <span id="clockEl">--:--:--</span>
 </div>
 
@@ -482,9 +482,9 @@ body::before {
 </div>
 
 <script>
-// ── GEMINI CONFIG ──────────────────────────────────────────────────────────────
-const GEMINI_KEY = 'AIzaSyDbN_v8nxsvjYVAvut7hGjHyec9AmjA15o';
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+// ── OPENROUTER CONFIG ─────────────────────────────────────────────────────────
+const OR_KEY = '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';
+const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let running = false, replyInterval = 30, cycles = 0, totalMsgs = 0;
@@ -644,14 +644,9 @@ function startSpeechRecognition() {
   recognition.start();
 }
 
-// ── GEMINI API CALL ────────────────────────────────────────────────────────────
+// ── OPENROUTER API CALL ───────────────────────────────────────────────────────
 async function generateReplies(img, speech) {
   const typingEl = addTyping();
-  const parts = [];
-
-  if (img) {
-    parts.push({ inlineData: { mimeType: 'image/jpeg', data: img } });
-  }
 
   const prompt = `You are simulating a live Indian online classroom student chat (CodeTantra platform).
 ${img ? 'A screenshot of the current lecture screen is attached — read the whiteboard, code, or slides visible.' : ''}
@@ -671,15 +666,34 @@ Rules:
 - Use Indian student names
 - Messages must directly relate to what is being taught`;
 
-  parts.push({ text: prompt });
+  const messages = [];
+
+  if (img) {
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + img } },
+        { type: 'text', text: prompt }
+      ]
+    });
+  } else {
+    messages.push({ role: 'user', content: prompt });
+  }
 
   try {
-    const res = await fetch(GEMINI_URL, {
+    const res = await fetch(OR_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + OR_KEY,
+        'HTTP-Referer': window.location.href,
+        'X-Title': 'AutoClassBot'
+      },
       body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 600 }
+        model: 'meta-llama/llama-4-scout:free',
+        messages: messages,
+        max_tokens: 600,
+        temperature: 0.8
       })
     });
 
@@ -687,11 +701,11 @@ Rules:
 
     if (data.error) {
       typingEl.remove();
-      addSys('Gemini error: ' + data.error.message);
+      addSys('OpenRouter error: ' + data.error.message);
       return;
     }
 
-    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    let raw = data.choices?.[0]?.message?.content || '';
     raw = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(raw);
     typingEl.remove();
