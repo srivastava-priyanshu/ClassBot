@@ -681,23 +681,21 @@ function startSpeechRecognition() {
 async function generateReplies(img, speech) {
   const typingEl = addTyping();
 
-  const prompt = `You are simulating a live Indian online classroom student chat (CodeTantra platform).
-${img ? 'A screenshot of the current lecture screen is attached — read the whiteboard, code, or slides visible.' : ''}
-${speech ? 'Recent speech from the lecture: "' + speech + '"' : ''}
-${currentTopic ? 'Previously detected topic: ' + currentTopic : ''}
+  const prompt = `IMPORTANT: You must respond with ONLY a JSON object. No explanations, no greetings, no markdown, no backticks. Just raw JSON.
 
-Your job:
-1. Detect what topic is currently being taught (1 short phrase).
-2. Generate 3-5 realistic short student chat messages relevant to that topic.
+Task: Simulate Indian online classroom student chat messages.
+${speech ? 'Lecture speech: "' + speech + '"' : 'No speech captured yet.'}
+${currentTopic ? 'Previous topic: ' + currentTopic : ''}
 
-Respond ONLY in this exact JSON format, no markdown, no extra text:
-{"topic":"topic here","replies":[{"name":"Akash","id":"12323501","msg":"message here"}]}
+Output this exact JSON structure and nothing else:
+{"topic":"one short topic phrase","replies":[{"name":"Akash","id":"12323501","msg":"student reply here"},{"name":"Priya","id":"12308612","msg":"another reply"},{"name":"Ravi","id":"12308451","msg":"another reply"}]}
 
-Rules:
-- 1-2 sentences max per reply
-- Mix of: "yes sir", "understood sir", topic-related questions, confusion about concepts
-- Use Indian student names
-- Messages must directly relate to what is being taught`;
+Student reply rules:
+- Max 1 sentence each
+- Mix of: yes sir / understood sir / short questions / confusion
+- Indian student names only
+- Topic must relate to the lecture content
+- START YOUR RESPONSE WITH { AND END WITH }`;
 
   const messages = [];
 
@@ -739,7 +737,12 @@ Rules:
     }
 
     let raw = data.choices?.[0]?.message?.content || '';
+    // Strip markdown, backticks, and any text before/after JSON
     raw = raw.replace(/```json|```/g, '').trim();
+    // Extract JSON object if surrounded by other text
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response: ' + raw.substring(0, 80));
+    raw = jsonMatch[0];
     const parsed = JSON.parse(raw);
     typingEl.remove();
 
