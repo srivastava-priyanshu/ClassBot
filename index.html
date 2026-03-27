@@ -403,6 +403,18 @@ body::before {
   <!-- LEFT PANEL -->
   <div class="panel-left">
 
+    <div>
+      <div class="section-head">OpenRouter API Key</div>
+      <input id="keyInput" type="text" placeholder="Paste sk-or-v1-... here"
+        style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid #1e2535;
+        background:#131820;color:#e8eaf0;font-size:11px;font-family:Space Mono,monospace;
+        outline:none;box-sizing:border-box;"
+        oninput="OR_KEY=this.value.trim();updateKeyStatus()"/>
+      <div id="keyStatus" style="font-size:10px;color:#5a6478;margin-top:5px;font-family:Space Mono,monospace;">
+        ⬆ paste your OpenRouter key above
+      </div>
+    </div>
+
     <button class="start-btn" id="mainBtn" onclick="toggleBot()">▶ START MONITORING</button>
 
     <div>
@@ -483,14 +495,25 @@ body::before {
 
 <script>
 // ── OPENROUTER CONFIG ─────────────────────────────────────────────────────────
-const OR_KEY = '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';
 const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
+let OR_KEY = sessionStorage.getItem('or_key') || '';
 
 // ── STATE ──────────────────────────────────────────────────────────────────────
 let running = false, replyInterval = 30, cycles = 0, totalMsgs = 0;
 let screenStream = null, audioStream = null, recognition = null;
 let progTimer = null, transcriptBuffer = '', lastFrame = null, currentTopic = '';
 let opts = { screen: true, audio: true };
+
+// ── RESTORE KEY ────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = sessionStorage.getItem('or_key');
+  if (saved) {
+    OR_KEY = saved;
+    document.getElementById('keyInput').value = saved;
+    document.getElementById('keyStatus').textContent = '✓ Key restored';
+    document.getElementById('keyStatus').style.color = 'var(--green)';
+  }
+});
 
 // ── CLOCK ──────────────────────────────────────────────────────────────────────
 setInterval(() => {
@@ -528,7 +551,17 @@ function setDot(state) {
 
 // ── MAIN TOGGLE ────────────────────────────────────────────────────────────────
 async function toggleBot() {
-  if (!running) await startBot(); else stopBot();
+  if (!running) {
+    if (!OR_KEY || !OR_KEY.startsWith('sk-or-')) {
+      document.getElementById('keyStatus').textContent = '⚠ Please paste a valid OpenRouter key first!';
+      document.getElementById('keyStatus').style.color = 'var(--red)';
+      document.getElementById('keyInput').focus();
+      return;
+    }
+    document.getElementById('keyStatus').textContent = '✓ Key set';
+    document.getElementById('keyStatus').style.color = 'var(--green)';
+    await startBot();
+  } else stopBot();
 }
 
 async function startBot() {
@@ -690,7 +723,7 @@ Rules:
         'X-Title': 'AutoClassBot'
       },
       body: JSON.stringify({
-        model: 'meta-llama/llama-4-scout:free',
+        model: 'openrouter/auto',
         messages: messages,
         max_tokens: 600,
         temperature: 0.8
